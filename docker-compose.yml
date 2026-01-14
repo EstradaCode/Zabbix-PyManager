@@ -1,0 +1,19 @@
+services:
+  # broker de mensajes
+  redis-broker:
+    image: redis:alpine
+    container_name: zx-manager-redis
+    ports:
+      - "6379:6379"
+
+  manager-app:
+    build: .
+    container_name: zx-manager-app
+    volumes:
+      - .:/app
+    environment:
+      - REDIS_HOST=redis-broker
+      - ZABBIX_API_URL=http://localhost/zabbix/api_jsonrpc.php
+    network_mode: "host" # modo de red para la comunicación app-host
+    depends_on:
+      - redis-broker
