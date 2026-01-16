@@ -11,15 +11,11 @@ r = redis.Redis(host=settings.redis_host, port=settings.redis_port, db=0)
 @app.get("/")
 def home():
     return {"message": "Zabbix Manager API Online"}
-
-@app.post("/sysadmin/restart-server")
-def restart_server():
-    # tarea default
+# test worker - os successsss :D
+@app.post("/sysadmin/test-os-access")
+def test_os_access():
     payload = {
-        "action": "restart_zabbix",
-        "service": "zabbix-server"
+        "action": "check_system"
     }
-    # meto la tarea en la cola
     r.lpush("infra_tasks", json.dumps(payload))
-    return {"status": "success", "detail": "Orden enviada al Worker nativo"}
-#prueba de cola completada
+    return {"message": "Test de acceso al OS enviado al Worker"}
