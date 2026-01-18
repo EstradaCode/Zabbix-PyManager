@@ -19,3 +19,9 @@ def test_os_access():
     }
     r.lpush("infra_tasks", json.dumps(payload))
     return {"message": "Test de acceso al OS enviado al Worker"}
+
+@app.post("/sysadmin/install-zabbix-core")
+def install_zabbix_core():
+    payload = {"action": "install_zabbix"}
+    r.lpush("infra_tasks", json.dumps(payload))
+    return {"message": "Instalación de paquetes Zabbix 7.0 iniciada en el host"}
