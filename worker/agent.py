@@ -34,6 +34,38 @@ def execute_sys_task(command_list):
     except Exception as e:
         return False, str(e)
 
+def install_mysql_8():
+    print("🛠️ Preparando instalación de MySQL Server 8.0...")
+    execute_sys_task(["sudo", "apt-get", "update"])
+    return execute_sys_task(["sudo", "apt-get", "install", "-y", "mysql-server"])
+
+def setup_zabbix_mysql(db_password):
+    """Crea la base de datos e importa el esquema inicial"""
+    print("🗄️ Configurando base de datos MySQL para Zabbix...")
+    
+    #path con las tablas script .sql
+    schema_path = "/usr/share/zabbix-sql-scripts/mysql/server.sql.gz"
+    
+    commands = [
+        ["sudo", "mysql", "-e", "CREATE DATABASE zabbix CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;"],
+        ["sudo", "mysql", "-e", f"CREATE USER 'zabbix'@'localhost' IDENTIFIED BY '{db_password}';"],
+        ["sudo", "mysql", "-e", "GRANT ALL PRIVILEGES ON zabbix.* TO 'zabbix'@'localhost';"],
+        ["sudo", "mysql", "-e", "SET GLOBAL log_bin_trust_function_creators = 1;"],
+        # arrastro el esquema y lo ejecuto
+        ["bash", "-c", f"zcat {schema_path} | sudo mysql -uzabbix -p{db_password} zabbix"]
+    ]
+
+    for cmd in commands:
+        print(f"exec: {' '.join(cmd)}")
+        success, output = execute_sys_task(cmd)
+        if not success:
+            return False, output
+            
+    # desactivo logbin
+    execute_sys_task(["sudo", "mysql", "-e", "SET GLOBAL log_bin_trust_function_creators = 0;"])
+    
+    return True, "Base de datos configurada e importada"
+
 def install_zabbix_packages():
     print("Iniciando instalación de paquetes Zabbix 7.0...")
     
@@ -71,8 +103,11 @@ try:
             
             elif action == "install_zabbix":
                 success, message = install_zabbix_packages()
-                print(f"Res: {message}")
-
+                if success:
+                    db_pass = payload.get("db_password", "zabbix_password") 
+                    success_db, message_db = setup_zabbix_mysql(db_pass)
+                else:
+                    print(f"Res: {message}")
             else:
                 print(f"Acción desconocida: {action}")
             
